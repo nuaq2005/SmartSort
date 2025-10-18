@@ -1,155 +1,634 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SmartSort Firebase Auth</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoTrash NYC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Firebase V8 CDN Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        // 1. Firebase Configuration (REPLACE with your actual config if different)
+        const firebaseConfig = {
+          apiKey: "AIzaSyAcl7pPjK9n_LuIP4mJqSVL4G_FWM98S5U",
+          authDomain: "smartsort-8198a.firebaseapp.com",
+          projectId: "smartsort-8198a",
+          storageBucket: "smartsort-8198a.appspot.com",
+          messagingSenderId: "834587190087",
+          appId: "1:834587190087:web:bf9d185bcd9ad7a2c9a262"
+        };
+
+        // 2. Initialize Firebase using the global variable 'firebase'
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = app.auth(); // V8 syntax for Auth
+        const db = app.firestore(); // V8 syntax for Firestore
+        
+        // This is necessary for serverTimestamp to work in V8 CDN setups
+        const FieldValue = firebase.firestore.FieldValue; 
+    </script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body class="bg-gray-100">
+    <div id="app"></div>
+    
 
-  <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-    <h1 class="text-2xl font-bold mb-6 text-center">SmartSort</h1>
+    <script>
+        // State management
+        let state = {
+            currentScreen: 'login',
+            userType: '',
+            selectedZipcode: '',
+            trashType: '',
+            trashWeight: '',
+            totalPoints: 1250,
+            error: '', // For displaying auth errors and temporary messages
+            history: [
+                { type: 'Paper', weight: '8', points: 80, date: 'Yesterday', icon: '📄' },
+                { type: 'Glass', weight: '3', points: 30, date: '2 days ago', icon: '🍾' },
+                { type: 'Metal', weight: '4', points: 40, date: '5 days ago', icon: '🥫' }
+            ]
+        };
 
-    <!-- Sign-Up Form -->
-    <div id="signup-form">
-      <h2 class="text-xl font-semibold mb-4">Sign Up</h2>
-      <input id="signup-email" type="email" placeholder="Email" class="border p-2 mb-3 w-full rounded">
-      <input id="signup-password" type="password" placeholder="Password" class="border p-2 mb-3 w-full rounded">
-      <select id="signup-role" class="border p-2 mb-3 w-full rounded">
-        <option value="">Select Role</option>
-        <option value="Regular">Regular</option>
-        <option value="Org">Environmental Org</option>
-        <option value="Company">Company</option>
-      </select>
-      <button id="signup-btn" class="bg-green-500 text-white py-2 px-4 rounded w-full">Sign Up</button>
-      <p class="mt-2 text-sm">Already have an account? <span id="toggle-to-signin" class="text-blue-500 cursor-pointer">Sign In</span></p>
-    </div>
+        // Navigate to screen
+        function navigateTo(screen, data = {}) {
+            state = { ...state, ...data, error: '' }; // Clear error on navigation
+            state.currentScreen = screen;
+            render();
+        }
+        
+        // Helper function for Firebase Login
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
 
-    <!-- Sign-In Form -->
-    <div id="signin-form" class="hidden">
-      <h2 class="text-xl font-semibold mb-4">Sign In</h2>
-      <input id="signin-email" type="email" placeholder="Email" class="border p-2 mb-3 w-full rounded">
-      <input id="signin-password" type="password" placeholder="Password" class="border p-2 mb-3 w-full rounded">
-      <button id="signin-btn" class="bg-blue-500 text-white py-2 px-4 rounded w-full">Sign In</button>
-      <p class="mt-2 text-sm">Don't have an account? <span id="toggle-to-signup" class="text-green-500 cursor-pointer">Sign Up</span></p>
-    </div>
+            if (!email || !password) {
+                state.error = 'Please enter both email and password.';
+                render();
+                return;
+            }
 
-    <!-- User Dashboard -->
-    <div id="dashboard" class="hidden mt-4">
-      <h2 class="text-xl font-semibold mb-2">Welcome, <span id="user-email"></span></h2>
-      <p>Role: <span id="user-role"></span></p>
-      <button id="signout-btn" class="mt-4 bg-red-500 text-white py-2 px-4 rounded">Sign Out</button>
-    </div>
-  </div>
+            try {
+                state.error = 'Logging in...'; // Simple loading state
+                render();
+                await auth.signInWithEmailAndPassword(email, password);
+                
+                // On successful login, navigate to the user type selection screen
+                navigateTo('userType');
 
-  <!-- Firebase SDKs -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+            } catch (error) {
+                state.error = error.message;
+                render();
+            }
+        }
+        
+        // Helper function for Firebase Sign Up (fixed)
+async function handleSignUp() {
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAEf5s55QhSlcilJbVcdzn-RQ4TkFpdOPU",
-      authDomain: "smartsort-49305.firebaseapp.com",
-      projectId: "smartsort-49305",
-      storageBucket: "smartsort-49305.firebasestorage.app",
-      messagingSenderId: "365040450453",
-      appId: "1:365040450453:web:6bbe630198021ce3ecd49c"
-    };
+    if (!email || !password) {
+        state.error = 'Please enter both email and password.';
+        render();
+        return;
+    }
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // Toggle forms
-    const signupForm = document.getElementById("signup-form");
-    const signinForm = document.getElementById("signin-form");
-    const dashboard = document.getElementById("dashboard");
-
-    document.getElementById("toggle-to-signin").addEventListener("click", () => {
-      signupForm.classList.add("hidden");
-      signinForm.classList.remove("hidden");
-    });
-
-    document.getElementById("toggle-to-signup").addEventListener("click", () => {
-      signinForm.classList.add("hidden");
-      signupForm.classList.remove("hidden");
-    });
-
-    // Sign-Up
-    async function signUp() {
-      const email = document.getElementById("signup-email").value;
-      const password = document.getElementById("signup-password").value;
-      const role = document.getElementById("signup-role").value;
-
-      if (!role) return alert("Please select a role");
-
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
-        // Save role to Firestore
-        await setDoc(doc(db, "users", user.uid), { role });
+        try {
+            await db.collection('users').doc(user.uid).set({
+                email,
+                totalPoints: 0,
+                createdAt: FieldValue.serverTimestamp()
+            });
+            console.log(`User profile created for UID: ${user.uid}`);
+        } catch (firestoreError) {
+            console.warn("Firestore write failed, but user was created in Auth:", firestoreError.message);
+        }
 
-        showDashboard(user.email, role);
-      } catch (err) {
-        alert(err.message);
-      }
+        state.message = `Account created successfully for ${email}!`;
+        render();
+
+        setTimeout(() => {
+            navigateTo('userType', { userId: user.uid });
+        }, 1500);
+
+    } catch (authError) {
+        if (authError.code === 'auth/email-already-in-use') {
+            state.error = 'Email already registered. Redirecting to Login...';
+            render();
+            setTimeout(() => navigateTo('login'), 1500);
+        } else {
+            state.error = authError.message;
+            render();
+        }
     }
+}
 
-    document.getElementById("signup-btn").addEventListener("click", signUp);
+window.handleSignUp = handleSignUp;
 
-    // Sign-In
-    async function signIn() {
-      const email = document.getElementById("signin-email").value;
-      const password = document.getElementById("signin-password").value;
+            
+        // Login Screen
+        function LoginScreen() {
+            return `
+                <div class="min-h-screen bg-gradient-to-b from-green-400 to-blue-500 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
+                        <div class="text-center mb-8">
+                            <div class="bg-green-500 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </div>
+                            <h1 class="text-3xl font-bold text-gray-800">EcoTrash NYC</h1>
+                            <p class="text-gray-600 mt-2">Track, Reduce, Earn Points</p>
+                        </div>
+                        
+                        ${state.error ? `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 text-sm" role="alert">
+                            <span class="block sm:inline">${state.error}</span>
+                        </div>` : ''}
 
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+                        <input type="email" id="login-email" placeholder="Email" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-4 focus:border-green-500 focus:outline-none">
+                        <input type="password" id="login-password" placeholder="Password" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-6 focus:border-green-500 focus:outline-none">
+                        
+                        <button onclick="handleLogin()" class="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition">
+                            Login
+                        </button>
+                        
+                        
+                        <p class="text-center text-gray-500 text-sm mt-4">
+                            Don't have an account? <span onclick="navigateTo('signup')" class="text-green-500 font-semibold cursor-pointer">Sign up</span>
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Sign Up Screen
+        function SignUpScreen() {
+            const displayError = state.error;
+            let alertClass = '';
 
-        // Get role from Firestore
-        const docSnap = await getDoc(doc(db, "users", user.uid));
-        const role = docSnap.exists() ? docSnap.data().role : "Unknown";
+            // Logic to determine alert color based on message content
+            if (displayError.includes('successfully')) {
+                alertClass = 'bg-green-100 border border-green-400 text-green-700'; // Success (Green)
+            } else if (displayError === 'Creating account...') {
+                alertClass = 'bg-blue-100 border border-blue-400 text-blue-700'; // Processing (Blue)
+            } else if (displayError) {
+                alertClass = 'bg-red-100 border border-red-400 text-red-700'; // Error (Red)
+            } else {
+                alertClass = '';
+            }
 
-        showDashboard(user.email, role);
-      } catch (err) {
-        alert(err.message);
-      }
-    }
+            return `
+                <div class="min-h-screen bg-gradient-to-b from-green-400 to-blue-500 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
+                        <div class="text-center mb-8">
+                            <div class="bg-green-500 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                                </svg>
+                            </div>
+                            <h1 class="text-3xl font-bold text-gray-800">Create Account</h1>
+                            <p class="text-gray-600 mt-2">Join EcoTrash NYC</p>
+                        </div>
+                        
+                        ${displayError ? `<div class="${alertClass} px-4 py-3 rounded relative mb-4 text-sm font-medium" role="alert">
+                            <span class="block sm:inline">${displayError}</span>
+                        </div>` : ''}
 
-    document.getElementById("signin-btn").addEventListener("click", signIn);
+                        <input type="email" id="signup-email" placeholder="Email" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-4 focus:border-green-500 focus:outline-none">
+                        <input type="password" id="signup-password" placeholder="Password (min 6 characters)" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-6 focus:border-green-500 focus:outline-none">
+                        
+                        <button onclick="handleSignUp()" class="w-full bg-blue-500 text-white py-4 rounded-xl font-semibold hover:bg-blue-600 transition">
+                            Sign Up
+                        </button>
+                        
+                        <p class="text-center text-gray-500 text-sm mt-4">
+                            Already have an account? <span onclick="navigateTo('login')" class="text-green-500 font-semibold cursor-pointer">Login</span>
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
 
-    // Sign-Out
-    async function signOut() {
-      await firebaseSignOut(auth);
-      dashboard.classList.add("hidden");
-      signinForm.classList.remove("hidden");
-    }
+        // User Type Selection Screen
+        function UserTypeScreen() {
+            return `
+                <div class="min-h-screen bg-gray-50 p-4">
+                    <div class="max-w-md mx-auto pt-20">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2 text-center">Select Account Type</h2>
+                        <p class="text-gray-600 text-center mb-8">Choose how you'll use EcoTrash</p>
+                        
+                        <div onclick="navigateTo('map', {userType: 'regular'})" class="bg-white p-6 rounded-2xl mb-4 shadow-md hover:shadow-lg transition cursor-pointer border-2 border-transparent hover:border-green-500">
+                            <div class="flex items-center">
+                                <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mr-4">
+                                    <span class="text-3xl">👤</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Regular User</h3>
+                                    <p class="text-gray-600 text-sm">Individual waste tracking</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div onclick="navigateTo('map', {userType: 'company'})" class="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition cursor-pointer border-2 border-transparent hover:border-green-500">
+                            <div class="flex items-center">
+                                <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mr-4">
+                                    <span class="text-3xl">🏢</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Company</h3>
+                                    <p class="text-gray-600 text-sm">Business waste management</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
-    document.getElementById("signout-btn").addEventListener("click", signOut);
+        // Map Screen
+        function MapScreen() {
+            const zipcodes = ['10001', '10002', '10003', '10004', '10005', '10006'];
+            return `
+                <div class="min-h-screen bg-gray-50 pb-24">
+                    <div class="bg-green-500 text-white p-6 pb-8">
+                        <h2 class="text-2xl font-bold">NYC Location</h2>
+                        <p class="text-green-100">Select your zipcode area</p>
+                    </div>
+                    
+                    <div class="px-4 -mt-4">
+                        <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                            <div class="bg-gray-200 h-64 rounded-xl flex items-center justify-center mb-4">
+                                <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                <p class="text-gray-500 ml-2">NYC Map View</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-2">
+                                ${zipcodes.map(zip => `
+                                    <button onclick="navigateTo('trashType', {selectedZipcode: '${zip}'})" class="bg-blue-50 hover:bg-blue-100 p-3 rounded-lg text-blue-700 font-semibold transition">
+                                        ${zip}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    ${BottomNav()}
+                </div>
+            `;
+        }
 
-    // Show dashboard
-    function showDashboard(email, role) {
-      signupForm.classList.add("hidden");
-      signinForm.classList.add("hidden");
-      dashboard.classList.remove("hidden");
-      document.getElementById("user-email").innerText = email;
-      document.getElementById("user-role").innerText = role;
-    }
+        // Trash Type Selection Screen
+        function TrashTypeScreen() {
+            const trashTypes = [
+                { name: 'Plastic', icon: '♻️', type: 'plastic' },
+                { name: 'Paper', icon: '📄', type: 'paper' },
+                { name: 'Glass', icon: '🍾', type: 'glass' },
+                { name: 'Metal', icon: '🥫', type: 'metal' },
+                { name: 'Organic', icon: '🍎', type: 'organic' },
+                { name: 'E-Waste', icon: '💻', type: 'ewaste' }
+            ];
+            
+            return `
+                <div class="min-h-screen bg-gray-50 pb-24">
+                    <div class="bg-green-500 text-white p-6 pb-8">
+                        <h2 class="text-2xl font-bold">Identify Trash Type</h2>
+                        <p class="text-green-100">Zipcode: ${state.selectedZipcode}</p>
+                    </div>
+                    
+                    <div class="px-4 -mt-4">
+                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
+                            <button class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 rounded-xl font-semibold mb-4 flex items-center justify-center">
+                                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                Use Image Recognition
+                            </button>
+                            
+                            <div class="text-center text-gray-500 mb-4">or select manually</div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                ${trashTypes.map(item => `
+                                    <button onclick="navigateTo('weight', {trashType: '${item.name}'})" class="bg-gray-50 hover:bg-gray-100 p-4 rounded-xl border-2 border-gray-200 hover:border-green-500 transition">
+                                        <div class="text-4xl mb-2">${item.icon}</div>
+                                        <div class="text-sm font-semibold text-gray-700">${item.name}</div>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    ${BottomNav()}
+                </div>
+            `;
+        }
 
-    // Auto-login if already signed in
-    onAuthStateChanged(auth, async user => {
-      if (user) {
-        const docSnap = await getDoc(doc(db, "users", user.uid));
-        const role = docSnap.exists() ? docSnap.data().role : "Unknown";
-        showDashboard(user.email, role);
-      }
-    });
+        // Weight Estimation Screen
+        function WeightScreen() {
+            // Function to handle weight calculation and navigation
+            const calculateImpact = () => {
+                const weightInput = document.getElementById('weightInput');
+                const weight = parseFloat(weightInput.value);
+                if (weight > 0) {
+                    navigateTo('impact', { trashWeight: weight.toFixed(1) });
+                } else {
+                    state.error = 'Please enter a valid weight greater than zero.';
+                    render();
+                }
+            };
+            
+            // Expose function globally
+            setTimeout(() => { window.calculateImpact = calculateImpact; }, 0);
 
-  </script>
 
+            return `
+                <div class="min-h-screen bg-gray-50 pb-24">
+                    <div class="bg-green-500 text-white p-6 pb-8">
+                        <h2 class="text-2xl font-bold">Estimate Weight</h2>
+                        <p class="text-green-100">${state.trashType} waste</p>
+                    </div>
+                    
+                    <div class="px-4 -mt-4">
+                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
+                            <label class="block text-gray-700 font-semibold mb-2">Enter weight (lbs)</label>
+                            <input id="weightInput" type="number" value="${state.trashWeight}" placeholder="0" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-4 text-2xl font-bold text-center focus:border-green-500 focus:outline-none">
+                            
+                            ${state.error ? `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 text-sm" role="alert">
+                                <span class="block sm:inline">${state.error}</span>
+                            </div>` : ''}
+
+                            <div class="bg-blue-50 p-4 rounded-xl mb-4">
+                                <h3 class="font-semibold text-blue-900 mb-2">Common Reference Weights:</h3>
+                                <div class="text-sm text-blue-800 space-y-1">
+                                    <p>• Empty soda can: ~0.5 oz (0.03 lbs)</p>
+                                    <p>• Plastic water bottle: ~0.7 oz (0.04 lbs)</p>
+                                    <p>• Standard trash bag: ~5-10 lbs</p>
+                                    <p>• Large garbage bag: ~20-30 lbs</p>
+                                </div>
+                            </div>
+                            
+                            <button onclick="calculateImpact()" class="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition">
+                                Calculate Impact
+                            </button>
+                        </div>
+                    </div>
+                    ${BottomNav()}
+                </div>
+            `;
+        }
+
+        // Environmental Impact Screen
+        function ImpactScreen() {
+            const weight = parseFloat(state.trashWeight) || 0;
+            const co2Saved = (weight * 2.5).toFixed(2);
+            const energySaved = (weight * 15).toFixed(0);
+            const pointsEarned = Math.floor(weight * 10);
+            
+            return `
+                <div class="min-h-screen bg-gray-50 pb-24">
+                    <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 pb-8">
+                        <h2 class="text-2xl font-bold">Environmental Impact</h2>
+                        <p class="text-green-100">Great job recycling!</p>
+                    </div>
+                    
+                    <div class="px-4 -mt-4">
+                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
+                            <div class="text-center mb-6">
+                                <div class="text-5xl mb-2">🌍</div>
+                                <h3 class="text-3xl font-bold text-green-600 mb-1">+${pointsEarned} Points</h3>
+                                <p class="text-gray-600">Added to your account</p>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="bg-green-50 p-4 rounded-xl">
+                                    <h4 class="font-semibold text-green-900 mb-1">CO₂ Emissions Reduced</h4>
+                                    <p class="text-2xl font-bold text-green-700">${co2Saved} lbs</p>
+                                    <p class="text-sm text-green-600 mt-1">Equivalent to planting ${Math.ceil(weight / 2)} trees</p>
+                                </div>
+                                
+                                <div class="bg-blue-50 p-4 rounded-xl">
+                                    <h4 class="font-semibold text-blue-900 mb-1">Energy Conserved</h4>
+                                    <p class="text-2xl font-bold text-blue-700">${energySaved} kWh</p>
+                                    <p class="text-sm text-blue-600 mt-1">Powers a home for ${Math.ceil(weight / 3)} hours</p>
+                                </div>
+                                
+                                <div class="bg-purple-50 p-4 rounded-xl">
+                                    <h4 class="font-semibold text-purple-900 mb-1">EPA Compliance</h4>
+                                    <p class="text-sm text-purple-700">Your contribution aligns with EPA's waste reduction guidelines and supports sustainable waste management practices.</p>
+                                </div>
+                            </div>
+                            
+                            <button onclick="navigateTo('disposal')" class="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition mt-6">
+                                Find Disposal Locations
+                            </button>
+                        </div>
+                    </div>
+                    ${BottomNav()}
+                </div>
+            `;
+        }
+
+        // Disposal Locations Screen
+        function DisposalScreen() {
+            const locations = [
+                { name: 'Manhattan Recycling Center', distance: '0.5 mi', address: '123 Green St' },
+                { name: 'NYC Waste Station', distance: '1.2 mi', address: '456 Eco Ave' },
+                { name: 'Central Park Drop-off', distance: '2.1 mi', address: '789 Nature Blvd' }
+            ];
+            
+            // Function to simulate completing the disposal (and update points)
+            const completeDisposal = () => {
+                const pointsEarned = Math.floor(parseFloat(state.trashWeight) * 10);
+                state.totalPoints += pointsEarned;
+                
+                // Add to mock history
+                state.history.unshift({
+                    type: state.trashType, 
+                    weight: state.trashWeight, 
+                    points: pointsEarned, 
+                    date: 'Just now', 
+                    icon: state.trashType === 'Paper' ? '📄' : state.trashType === 'Glass' ? '🍾' : state.trashType === 'Metal' ? '🥫' : '♻️'
+                });
+
+                // Clear temporary states
+                state.trashType = '';
+                state.trashWeight = '';
+                
+                navigateTo('history');
+            };
+
+            // Expose function globally
+            setTimeout(() => { window.completeDisposal = completeDisposal; }, 0);
+
+            
+            return `
+                <div class="min-h-screen bg-gray-50 pb-24">
+                    <div class="bg-green-500 text-white p-6 pb-8">
+                        <h2 class="text-2xl font-bold">Disposal Locations</h2>
+                        <p class="text-green-100">Near ${state.selectedZipcode}</p>
+                    </div>
+                    
+                    <div class="px-4 -mt-4">
+                        <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+                            <div class="bg-gray-200 h-48 rounded-xl flex items-center justify-center mb-4">
+                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                            </div>
+                            
+                            <div class="space-y-3">
+                                ${locations.map(location => `
+                                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:border-green-500 transition cursor-pointer">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <h4 class="font-semibold text-gray-800">${location.name}</h4>
+                                                <p class="text-sm text-gray-600">${location.address}</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-green-600 font-semibold">${location.distance}</p>
+                                                <button class="text-xs text-blue-500 hover:underline">Directions</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <button onclick="completeDisposal()" class="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition mt-4">
+                                Complete Disposal
+                            </button>
+                        </div>
+                    </div>
+                    ${BottomNav()}
+                </div>
+            `;
+        }
+
+        // History Screen
+        function HistoryScreen() {
+            return `
+                <div class="min-h-screen bg-gray-50 pb-24">
+                    <div class="bg-green-500 text-white p-6 pb-8">
+                        <h2 class="text-2xl font-bold">Trash History</h2>
+                        <p class="text-green-100">Your recycling journey</p>
+                    </div>
+                    
+                    <div class="px-4 -mt-4">
+                        <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-lg p-6 mb-4 text-white">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-purple-100 text-sm">Total Points</p>
+                                    <h3 class="text-4xl font-bold">${state.totalPoints}</h3>
+                                </div>
+                                <svg class="w-16 h-16 text-purple-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.244A8 8 0 0012 4c-4.418 0-8 3.582-8 8s3.582 8 8 8a8 8 0 005.618-13.618z"></path>
+                                </svg>
+                            </div>
+                            <div class="mt-4 bg-white bg-opacity-20 p-3 rounded-lg">
+                                <p class="text-sm">Next reward: 2000 points</p>
+                                <div class="w-full bg-white bg-opacity-30 rounded-full h-2 mt-2">
+                                    <div class="bg-white h-2 rounded-full" style="width: ${(state.totalPoints/2000)*100}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg p-4">
+                            <h3 class="font-semibold text-gray-800 mb-3">Recent Activity</h3>
+                            <div class="space-y-3">
+                                ${state.history.map(item => `
+                                    <div class="bg-gray-50 p-4 rounded-xl flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="text-3xl mr-3">${item.icon}</div>
+                                            <div>
+                                                <h4 class="font-semibold text-gray-800">${item.type}</h4>
+                                                <p class="text-sm text-gray-600">${item.weight} lbs • ${item.date}</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="font-bold text-green-600">+${item.points}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    ${BottomNav()}
+                </div>
+            `;
+        }
+
+        // Bottom Navigation
+        function BottomNav() {
+            // Check if the user is logged in (i.e., not on login/signup/usertype screens)
+            const showNav = state.currentScreen !== 'login' && state.currentScreen !== 'signup' && state.currentScreen !== 'userType';
+
+            if (!showNav) {
+                return '';
+            }
+            
+            return `
+                <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3">
+                    <div class="flex justify-around max-w-md mx-auto">
+                        <button onclick="navigateTo('map')" class="flex flex-col items-center ${state.currentScreen === 'map' ? 'text-green-500' : 'text-gray-400'}">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            </svg>
+                            <span class="text-xs mt-1">Map</span>
+                        </button>
+                        <button onclick="navigateTo('trashType')" class="flex flex-col items-center ${state.currentScreen.includes('trash') || state.currentScreen.includes('weight') || state.currentScreen.includes('impact') || state.currentScreen.includes('disposal') ? 'text-green-500' : 'text-gray-400'}">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                            <span class="text-xs mt-1">Add</span>
+                        </button>
+                        <button onclick="navigateTo('history')" class="flex flex-col items-center ${state.currentScreen === 'history' ? 'text-green-500' : 'text-gray-400'}">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="text-xs mt-1">History</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        // Main render function
+        function render() {
+            // Note: The original state update for a successful sign-up was a 'Welcome,' message.
+            // I've changed the success message and updated the SignUpScreen logic to use Green for "successfully" and Blue for "Creating account...".
+            const screens = {
+                'login': LoginScreen,
+                'signup': SignUpScreen, 
+                'userType': UserTypeScreen,
+                'map': MapScreen,
+                'trashType': TrashTypeScreen,
+                'weight': WeightScreen,
+                'impact': ImpactScreen,
+                'disposal': DisposalScreen,
+                'history': HistoryScreen
+            };
+            
+            const screenFunction = screens[state.currentScreen] || LoginScreen;
+            document.getElementById('app').innerHTML = screenFunction();
+        }
+        
+        // Initial render on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Expose global functions needed by inline onclick attributes
+            window.navigateTo = navigateTo;
+            window.handleLogin = handleLogin;
+            window.handleSignUp = handleSignUp;
+
+            render();
+        });
+
+    </script>
 </body>
 </html>
