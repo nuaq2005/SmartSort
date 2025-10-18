@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartSort Firebase Auth</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+  <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+    <h1 class="text-2xl font-bold mb-6 text-center">SmartSort</h1>
+
+    <!-- Sign-Up Form -->
+    <div id="signup-form">
+      <h2 class="text-xl font-semibold mb-4">Sign Up</h2>
+      <input id="signup-email" type="email" placeholder="Email" class="border p-2 mb-3 w-full rounded">
+      <input id="signup-password" type="password" placeholder="Password" class="border p-2 mb-3 w-full rounded">
+      <select id="signup-role" class="border p-2 mb-3 w-full rounded">
+        <option value="">Select Role</option>
+        <option value="Regular">Regular</option>
+        <option value="Org">Environmental Org</option>
+        <option value="Company">Company</option>
+      </select>
+      <button id="signup-btn" class="bg-green-500 text-white py-2 px-4 rounded w-full">Sign Up</button>
+      <p class="mt-2 text-sm">Already have an account? <span id="toggle-to-signin" class="text-blue-500 cursor-pointer">Sign In</span></p>
+    </div>
+
+    <!-- Sign-In Form -->
+    <div id="signin-form" class="hidden">
+      <h2 class="text-xl font-semibold mb-4">Sign In</h2>
+      <input id="signin-email" type="email" placeholder="Email" class="border p-2 mb-3 w-full rounded">
+      <input id="signin-password" type="password" placeholder="Password" class="border p-2 mb-3 w-full rounded">
+      <button id="signin-btn" class="bg-blue-500 text-white py-2 px-4 rounded w-full">Sign In</button>
+      <p class="mt-2 text-sm">Don't have an account? <span id="toggle-to-signup" class="text-green-500 cursor-pointer">Sign Up</span></p>
+    </div>
+
+    <!-- User Dashboard -->
+    <div id="dashboard" class="hidden mt-4">
+      <h2 class="text-xl font-semibold mb-2">Welcome, <span id="user-email"></span></h2>
+      <p>Role: <span id="user-role"></span></p>
+      <button id="signout-btn" class="mt-4 bg-red-500 text-white py-2 px-4 rounded">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEf5s55QhSlcilJbVcdzn-RQ4TkFpdOPU",
+      authDomain: "smartsort-49305.firebaseapp.com",
+      projectId: "smartsort-49305",
+      storageBucket: "smartsort-49305.firebasestorage.app",
+      messagingSenderId: "365040450453",
+      appId: "1:365040450453:web:6bbe630198021ce3ecd49c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Toggle forms
+    const signupForm = document.getElementById("signup-form");
+    const signinForm = document.getElementById("signin-form");
+    const dashboard = document.getElementById("dashboard");
+
+    document.getElementById("toggle-to-signin").addEventListener("click", () => {
+      signupForm.classList.add("hidden");
+      signinForm.classList.remove("hidden");
+    });
+
+    document.getElementById("toggle-to-signup").addEventListener("click", () => {
+      signinForm.classList.add("hidden");
+      signupForm.classList.remove("hidden");
+    });
+
+    // Sign-Up
+    async function signUp() {
+      const email = document.getElementById("signup-email").value;
+      const password = document.getElementById("signup-password").value;
+      const role = document.getElementById("signup-role").value;
+
+      if (!role) return alert("Please select a role");
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Save role to Firestore
+        await setDoc(doc(db, "users", user.uid), { role });
+
+        showDashboard(user.email, role);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    document.getElementById("signup-btn").addEventListener("click", signUp);
+
+    // Sign-In
+    async function signIn() {
+      const email = document.getElementById("signin-email").value;
+      const password = document.getElementById("signin-password").value;
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Get role from Firestore
+        const docSnap = await getDoc(doc(db, "users", user.uid));
+        const role = docSnap.exists() ? docSnap.data().role : "Unknown";
+
+        showDashboard(user.email, role);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    document.getElementById("signin-btn").addEventListener("click", signIn);
+
+    // Sign-Out
+    async function signOut() {
+      await firebaseSignOut(auth);
+      dashboard.classList.add("hidden");
+      signinForm.classList.remove("hidden");
+    }
+
+    document.getElementById("signout-btn").addEventListener("click", signOut);
+
+    // Show dashboard
+    function showDashboard(email, role) {
+      signupForm.classList.add("hidden");
+      signinForm.classList.add("hidden");
+      dashboard.classList.remove("hidden");
+      document.getElementById("user-email").innerText = email;
+      document.getElementById("user-role").innerText = role;
+    }
+
+    // Auto-login if already signed in
+    onAuthStateChanged(auth, async user => {
+      if (user) {
+        const docSnap = await getDoc(doc(db, "users", user.uid));
+        const role = docSnap.exists() ? docSnap.data().role : "Unknown";
+        showDashboard(user.email, role);
+      }
+    });
+
+  </script>
+
+</body>
+</html>

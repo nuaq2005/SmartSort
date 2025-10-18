@@ -1,0 +1,47 @@
+// SignUpScreen.js
+import React, { useState } from "react";
+import { View, TextInput, Button, Text } from "react-native";
+import { auth } from "./firebaseConfig";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+
+export default function SignUpScreen({ navigation }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSignUp = async () => {
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      navigation.navigate("SignIn"); // go to sign-in after successful signup
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  return (
+    <View className="flex-1 justify-center p-4 bg-white">
+      <Text className="text-xl font-bold mb-4">Sign Up</Text>
+      <TextInput
+        className="border p-2 mb-4 rounded"
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+      />
+      <TextInput
+        className="border p-2 mb-4 rounded"
+        placeholder="Password"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
+      {error ? <Text className="text-red-500 mb-2">{error}</Text> : null}
+      <Button title="Sign Up" onPress={handleSignUp} />
+      <Text
+        className="mt-4 text-blue-500"
+        onPress={() => navigation.navigate("SignIn")}
+      >
+        Already have an account? Sign In
+      </Text>
+    </View>
+  );
+}
