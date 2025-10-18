@@ -48,33 +48,17 @@ class_names = list(co2_factors.keys())
 
 # Load the model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {device}")
+# print(f"Using device: {device}")
 
-try:
-    # Get the directory where app.py is located
-    import os
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(current_dir, 'waste_classifier_full.pth')
-    
-    print(f"Current directory: {current_dir}")
-    print(f"Looking for model at: {model_path}")
-    print(f"Files in current directory: {os.listdir(current_dir)}")
-    print(f"Model file exists: {os.path.exists(model_path)}")
-    
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Model file not found at {model_path}")
-    
-    model = torch.load(model_path, map_location=device, weights_only=False)
-    
-    model.eval()
-    print("✓ Model loaded successfully!")
-except Exception as e:
-    print(f"❌ Error loading model: {e}")
-    import traceback
-    traceback.print_exc()
-    model = None
+# Get the directory where app.py is 
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__)) #__file__
+model_path = os.path.join(current_dir, 'waste_classifier_full.pth')
+model = torch.load(model_path, map_location=device, weights_only=False) #made weights=False
+model.eval()
+print("Model loaded successfully!")
 
-# Same transform as training
+# Same transform 
 transform = transforms.Compose([
     transforms.Resize((128, 128)),
     transforms.ToTensor(),
