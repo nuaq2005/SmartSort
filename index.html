@@ -251,32 +251,66 @@ window.handleSignUp = handleSignUp;
             `;
         }
 
-        // Map Screen
+         // Map Screen
         function MapScreen() {
-            const zipcodes = ['10001', '10002', '10003', '10004', '10005', '10006'];
+            const currentMap = state.selectedMap || 'recycling';
+            
             return `
                 <div class="min-h-screen bg-gray-50 pb-24">
                     <div class="bg-green-500 text-white p-6 pb-8">
                         <h2 class="text-2xl font-bold">NYC Location</h2>
-                        <p class="text-green-100">Select your zipcode area</p>
+                        <p class="text-green-100">Find your zipcode area</p>
                     </div>
                     
                     <div class="px-4 -mt-4">
                         <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
-                            <div class="bg-gray-200 h-64 rounded-xl flex items-center justify-center mb-4">
-                                <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                </svg>
-                                <p class="text-gray-500 ml-2">NYC Map View</p>
+                            <div class="flex gap-2 mb-4">
+                                <button 
+                                    onclick="navigateTo('map', {selectedMap: 'recycling'})"
+                                    class="flex-1 py-3 px-4 rounded-xl font-semibold transition ${currentMap === 'recycling' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}">
+                                    ♻️ Electronics Drop Off 
+                                </button>
+                                <button 
+                                    onclick="navigateTo('map', {selectedMap: 'disposal'})"
+                                    class="flex-1 py-3 px-4 rounded-xl font-semibold transition ${currentMap === 'disposal' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}">
+                                    🗑️ Clothing and Textile Drop Off
+                                </button>
                             </div>
                             
-                            <div class="grid grid-cols-3 gap-2">
-                                ${zipcodes.map(zip => `
-                                    <button onclick="navigateTo('trashType', {selectedZipcode: '${zip}'})" class="bg-blue-50 hover:bg-blue-100 p-3 rounded-lg text-blue-700 font-semibold transition">
-                                        ${zip}
-                                    </button>
-                                `).join('')}
+                            <div class="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-xl mb-4">
+                                <h3 class="font-semibold text-gray-800 mb-2">
+                                    ${currentMap === 'recycling' ? '📍 Recycling Centers Map' : '📍 Textile Recycle Map'}
+                                </h3>
+                                <p class="text-sm text-gray-600">
+                                    ${currentMap === 'recycling' 
+                                        ? 'Find nearby recycling centers for plastic, paper, glass, and more' 
+                                        : 'Locate authorized drop off location in your area'}
+                                </p>
+                            </div>
+                            
+                            <div class="rounded-xl overflow-hidden shadow-lg border-2 border-gray-100">
+                                <iframe 
+                                    src="${currentMap === 'recycling' 
+                                        ? 'https://www.google.com/maps/d/embed?mid=18KGJL53IQb7VdWHtUvE8vTr9Do0&ehbc=2E312F'
+                                        : 'https://www.google.com/maps/d/embed?mid=1QL5NnDLbfhRyRc6HiElOe6471fyjaETr&ehbc=2E312F'}" 
+                                    width="100%" 
+                                    height="500" 
+                                    style="border:0;"
+                                    allowfullscreen="" 
+                                    loading="lazy"
+                                    referrerpolicy="no-referrer-when-downgrade">
+                                </iframe>
+                            </div>
+                            
+                            <div class="mt-4 grid grid-cols-2 gap-3">
+                                <div class="bg-green-50 p-3 rounded-lg">
+                                    <p class="text-xs text-green-600 font-semibold mb-1">QUICK TIP</p>
+                                    <p class="text-sm text-gray-700">Zoom in to find locations near you</p>
+                                </div>
+                                <div class="bg-blue-50 p-3 rounded-lg">
+                                    <p class="text-xs text-blue-600 font-semibold mb-1">HOURS</p>
+                                    <p class="text-sm text-gray-700">Click markers for details</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -284,23 +318,28 @@ window.handleSignUp = handleSignUp;
                 </div>
             `;
         }
-
-        // Trash Type Selection Screen
+         // Trash Type Selection Screen
         function TrashTypeScreen() {
             const trashTypes = [
                 { name: 'Plastic', icon: '♻️', type: 'plastic' },
                 { name: 'Paper', icon: '📄', type: 'paper' },
                 { name: 'Glass', icon: '🍾', type: 'glass' },
                 { name: 'Metal', icon: '🥫', type: 'metal' },
-                { name: 'Organic', icon: '🍎', type: 'organic' },
+                { name: 'Clothes', icon: '👕', type: 'clothes' },
                 { name: 'E-Waste', icon: '💻', type: 'ewaste' }
             ];
             
             return `
                 <div class="min-h-screen bg-gray-50 pb-24">
+                    <div class="p-4 mt-4">
+                        <button onclick="navigateTo('map')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg font-semibold mb-4">
+                            ← Back
+                        </button>
+                    </div>
+
                     <div class="bg-green-500 text-white p-6 pb-8">
                         <h2 class="text-2xl font-bold">Identify Trash Type</h2>
-                        <p class="text-green-100">Zipcode: ${state.selectedZipcode}</p>
+                        <p class="text-green-100"></p>
                     </div>
                     
                     <div class="px-4 -mt-4">
@@ -330,26 +369,16 @@ window.handleSignUp = handleSignUp;
             `;
         }
 
+
         // Weight Estimation Screen
         function WeightScreen() {
-            // Function to handle weight calculation and navigation
-            const calculateImpact = () => {
-                const weightInput = document.getElementById('weightInput');
-                const weight = parseFloat(weightInput.value);
-                if (weight > 0) {
-                    navigateTo('impact', { trashWeight: weight.toFixed(1) });
-                } else {
-                    state.error = 'Please enter a valid weight greater than zero.';
-                    render();
-                }
-            };
-            
-            // Expose function globally
-            setTimeout(() => { window.calculateImpact = calculateImpact; }, 0);
-
-
             return `
                 <div class="min-h-screen bg-gray-50 pb-24">
+                    <div class="p-4 mt-4">
+                        <button onclick="navigateTo('trashType')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg font-semibold mb-4">
+                            ← Back
+                        </button>
+                    </div>
                     <div class="bg-green-500 text-white p-6 pb-8">
                         <h2 class="text-2xl font-bold">Estimate Weight</h2>
                         <p class="text-green-100">${state.trashType} waste</p>
@@ -358,12 +387,8 @@ window.handleSignUp = handleSignUp;
                     <div class="px-4 -mt-4">
                         <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
                             <label class="block text-gray-700 font-semibold mb-2">Enter weight (lbs)</label>
-                            <input id="weightInput" type="number" value="${state.trashWeight}" placeholder="0" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-4 text-2xl font-bold text-center focus:border-green-500 focus:outline-none">
+                            <input id="weightInput" type="number" value="" placeholder="0" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-4 text-2xl font-bold text-center focus:border-green-500 focus:outline-none">
                             
-                            ${state.error ? `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 text-sm" role="alert">
-                                <span class="block sm:inline">${state.error}</span>
-                            </div>` : ''}
-
                             <div class="bg-blue-50 p-4 rounded-xl mb-4">
                                 <h3 class="font-semibold text-blue-900 mb-2">Common Reference Weights:</h3>
                                 <div class="text-sm text-blue-800 space-y-1">
@@ -384,49 +409,87 @@ window.handleSignUp = handleSignUp;
             `;
         }
 
+        // Helper function to calculate impact
+        function calculateImpact() {
+            const input = document.getElementById('weightInput');
+            if (input && input.value) {
+                state.trashWeight = parseFloat(input.value) || 0;
+
+                // CO2 factors per trash type
+                const co2Factors = {
+                    'Plastic': 3,
+                    'Paper': 1.5,
+                    'Glass': 0.5,
+                    'Metal': 10,
+                    'Clothes': 2,
+                    'E-Waste': 8
+                };
+
+                const energyFactors = {
+                    'Plastic': 15,
+                    'Paper': 10,
+                    'Glass': 5,
+                    'Metal': 50,
+                    'Clothes': 8,
+                    'E-Waste': 30
+                };
+
+                state.co2Saved = (state.trashWeight * (co2Factors[state.trashType] || 2.5)).toFixed(2);
+                state.energySaved = Math.round(state.trashWeight * (energyFactors[state.trashType] || 15));
+                state.pointsEarned = Math.floor(state.co2Saved * 4); // 1 lb CO2 = 4 points
+
+                navigateTo('impact');
+            } else {
+                alert('Please enter a weight');
+            }
+        }
+
+        // Helper function to delete history item with confirmation
+        function deleteHistoryItem(index) {
+            if (confirm('Are you sure you want to delete this record?')) {
+                const deletedItem = state.history[index];
+                state.totalPoints -= deletedItem.points;
+                state.history.splice(index, 1);
+                render();
+            }
+        }
+
         // Environmental Impact Screen
         function ImpactScreen() {
-            const weight = parseFloat(state.trashWeight) || 0;
-            const co2Saved = (weight * 2.5).toFixed(2);
-            const energySaved = (weight * 15).toFixed(0);
-            const pointsEarned = Math.floor(weight * 10);
-            
             return `
                 <div class="min-h-screen bg-gray-50 pb-24">
+                    <div class="p-4 mt-4 flex justify-between">
+                        <button onclick="navigateTo('weight')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg font-semibold">
+                            ← Back
+                        </button>
+                        <button onclick="navigateTo('trashType')" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold">
+                            Identify for more trash
+                        </button>
+                    </div>
+                    
                     <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 pb-8">
                         <h2 class="text-2xl font-bold">Environmental Impact</h2>
                         <p class="text-green-100">Great job recycling!</p>
                     </div>
                     
                     <div class="px-4 -mt-4">
-                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
-                            <div class="text-center mb-6">
-                                <div class="text-5xl mb-2">🌍</div>
-                                <h3 class="text-3xl font-bold text-green-600 mb-1">+${pointsEarned} Points</h3>
-                                <p class="text-gray-600">Added to your account</p>
-                            </div>
-                            
+                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-4 text-center">
+                            <div class="text-5xl mb-2">🌍</div>
+                            <h3 class="text-3xl font-bold text-green-600 mb-1">+${state.pointsEarned} Points</h3>
+                            <p class="text-gray-600 mb-4">Added to your account</p>
                             <div class="space-y-4">
                                 <div class="bg-green-50 p-4 rounded-xl">
                                     <h4 class="font-semibold text-green-900 mb-1">CO₂ Emissions Reduced</h4>
-                                    <p class="text-2xl font-bold text-green-700">${co2Saved} lbs</p>
-                                    <p class="text-sm text-green-600 mt-1">Equivalent to planting ${Math.ceil(weight / 2)} trees</p>
+                                    <p class="text-2xl font-bold text-green-700">${state.co2Saved} lbs</p>
                                 </div>
-                                
                                 <div class="bg-blue-50 p-4 rounded-xl">
                                     <h4 class="font-semibold text-blue-900 mb-1">Energy Conserved</h4>
-                                    <p class="text-2xl font-bold text-blue-700">${energySaved} kWh</p>
-                                    <p class="text-sm text-blue-600 mt-1">Powers a home for ${Math.ceil(weight / 3)} hours</p>
-                                </div>
-                                
-                                <div class="bg-purple-50 p-4 rounded-xl">
-                                    <h4 class="font-semibold text-purple-900 mb-1">EPA Compliance</h4>
-                                    <p class="text-sm text-purple-700">Your contribution aligns with EPA's waste reduction guidelines and supports sustainable waste management practices.</p>
+                                    <p class="text-2xl font-bold text-blue-700">${state.energySaved} kWh</p>
                                 </div>
                             </div>
                             
                             <button onclick="navigateTo('disposal')" class="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition mt-6">
-                                Find Disposal Locations
+                                Continue to earn more points!
                             </button>
                         </div>
                     </div>
@@ -435,82 +498,60 @@ window.handleSignUp = handleSignUp;
             `;
         }
 
-        // Disposal Locations Screen
+        // Disposal Complete (Congrats) Screen
         function DisposalScreen() {
-            const locations = [
-                { name: 'Manhattan Recycling Center', distance: '0.5 mi', address: '123 Green St' },
-                { name: 'NYC Waste Station', distance: '1.2 mi', address: '456 Eco Ave' },
-                { name: 'Central Park Drop-off', distance: '2.1 mi', address: '789 Nature Blvd' }
-            ];
+            const weight = parseFloat(state.trashWeight) || 0;
+            const points = state.pointsEarned || 0;
             
-            // Function to simulate completing the disposal (and update points)
-            const completeDisposal = () => {
-                const pointsEarned = Math.floor(parseFloat(state.trashWeight) * 10);
-                state.totalPoints += pointsEarned;
-                
-                // Add to mock history
-                state.history.unshift({
-                    type: state.trashType, 
-                    weight: state.trashWeight, 
-                    points: pointsEarned, 
-                    date: 'Just now', 
-                    icon: state.trashType === 'Paper' ? '📄' : state.trashType === 'Glass' ? '🍾' : state.trashType === 'Metal' ? '🥫' : '♻️'
-                });
-
-                // Clear temporary states
-                state.trashType = '';
-                state.trashWeight = '';
-                
-                navigateTo('history');
+            // Get icon based on trash type
+            const iconMap = {
+                'Plastic': '♻️',
+                'Paper': '📄',
+                'Glass': '🍾',
+                'Metal': '🥫',
+                'Clothes': '👕',
+                'E-Waste': '💻'
             };
-
-            // Expose function globally
-            setTimeout(() => { window.completeDisposal = completeDisposal; }, 0);
-
             
+            // Add to history if not already added
+            const isAlreadyAdded = state.history.length > 0 && 
+                                   state.history[0].type === state.trashType && 
+                                   state.history[0].weight === state.trashWeight.toString();
+            
+            if (!isAlreadyAdded) {
+                state.totalPoints += points;
+                state.history.unshift({
+                    type: state.trashType,
+                    weight: state.trashWeight.toString(),
+                    points: points,
+                    date: 'Today',
+                    icon: iconMap[state.trashType] || '🗑️'
+                });
+            }
+
             return `
                 <div class="min-h-screen bg-gray-50 pb-24">
-                    <div class="bg-green-500 text-white p-6 pb-8">
-                        <h2 class="text-2xl font-bold">Disposal Locations</h2>
-                        <p class="text-green-100">Near ${state.selectedZipcode}</p>
+                    <div class="p-4 mt-4 flex justify-between">
+                        <button onclick="navigateTo('impact')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg font-semibold">
+                            ← Back
+                        </button>
+                        <button onclick="navigateTo('trashType')" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold">
+                            Identify for more trash
+                        </button>
                     </div>
-                    
-                    <div class="px-4 -mt-4">
-                        <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
-                            <div class="bg-gray-200 h-48 rounded-xl flex items-center justify-center mb-4">
-                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                                </svg>
-                            </div>
-                            
-                            <div class="space-y-3">
-                                ${locations.map(location => `
-                                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:border-green-500 transition cursor-pointer">
-                                        <div class="flex justify-between items-start">
-                                            <div>
-                                                <h4 class="font-semibold text-gray-800">${location.name}</h4>
-                                                <p class="text-sm text-gray-600">${location.address}</p>
-                                            </div>
-                                            <div class="text-right">
-                                                <p class="text-green-600 font-semibold">${location.distance}</p>
-                                                <button class="text-xs text-blue-500 hover:underline">Directions</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            
-                            <button onclick="completeDisposal()" class="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition mt-4">
-                                Complete Disposal
-                            </button>
-                        </div>
+
+                    <div class="bg-white rounded-2xl shadow-lg p-6 m-4 text-center">
+                        <div class="text-6xl mb-4">🎉</div>
+                        <h2 class="text-2xl font-bold text-green-600 mb-2">Congratulations!</h2>
+                        <p class="text-gray-600 mb-4">You've earned ${points} points for recycling ${weight} lbs of ${state.trashType}.</p>
+                        <p class="text-gray-600 mb-4">Total Points: ${state.totalPoints}</p>
                     </div>
                     ${BottomNav()}
                 </div>
             `;
         }
 
-        // History Screen
+         // History Screen
         function HistoryScreen() {
             return `
                 <div class="min-h-screen bg-gray-50 pb-24">
@@ -527,7 +568,7 @@ window.handleSignUp = handleSignUp;
                                     <h3 class="text-4xl font-bold">${state.totalPoints}</h3>
                                 </div>
                                 <svg class="w-16 h-16 text-purple-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.244A8 8 0 0012 4c-4.418 0-8 3.582-8 8s3.582 8 8 8a8 8 0 005.618-13.618z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
                                 </svg>
                             </div>
                             <div class="mt-4 bg-white bg-opacity-20 p-3 rounded-lg">
@@ -540,22 +581,36 @@ window.handleSignUp = handleSignUp;
                         
                         <div class="bg-white rounded-2xl shadow-lg p-4">
                             <h3 class="font-semibold text-gray-800 mb-3">Recent Activity</h3>
-                            <div class="space-y-3">
-                                ${state.history.map(item => `
-                                    <div class="bg-gray-50 p-4 rounded-xl flex items-center justify-between">
-                                        <div class="flex items-center">
-                                            <div class="text-3xl mr-3">${item.icon}</div>
-                                            <div>
-                                                <h4 class="font-semibold text-gray-800">${item.type}</h4>
-                                                <p class="text-sm text-gray-600">${item.weight} lbs • ${item.date}</p>
+                            ${state.history.length === 0 ? `
+                                <div class="text-center py-8 text-gray-500">
+                                    <p>No recycling history yet</p>
+                                    <p class="text-sm mt-2">Start recycling to see your impact!</p>
+                                </div>
+                            ` : `
+                                <div class="space-y-3">
+                                    ${state.history.map((item, index) => `
+                                        <div class="bg-gray-50 p-4 rounded-xl flex items-center justify-between">
+                                            <div class="flex items-center flex-1">
+                                                <div class="text-3xl mr-3">${item.icon}</div>
+                                                <div>
+                                                    <h4 class="font-semibold text-gray-800">${item.type}</h4>
+                                                    <p class="text-sm text-gray-600">${item.weight} lbs • ${item.date}</p>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <div class="text-right">
+                                                    <p class="font-bold text-green-600">+${item.points}</p>
+                                                </div>
+                                                <button onclick="deleteHistoryItem(${index})" class="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                    </svg>
+                                                </button>
                                             </div>
                                         </div>
-                                        <div class="text-right">
-                                            <p class="font-bold text-green-600">+${item.points}</p>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
+                                    `).join('')}
+                                </div>
+                            `}
                         </div>
                     </div>
                     ${BottomNav()}
@@ -565,13 +620,6 @@ window.handleSignUp = handleSignUp;
 
         // Bottom Navigation
         function BottomNav() {
-            // Check if the user is logged in (i.e., not on login/signup/usertype screens)
-            const showNav = state.currentScreen !== 'login' && state.currentScreen !== 'signup' && state.currentScreen !== 'userType';
-
-            if (!showNav) {
-                return '';
-            }
-            
             return `
                 <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3">
                     <div class="flex justify-around max-w-md mx-auto">
@@ -581,7 +629,7 @@ window.handleSignUp = handleSignUp;
                             </svg>
                             <span class="text-xs mt-1">Map</span>
                         </button>
-                        <button onclick="navigateTo('trashType')" class="flex flex-col items-center ${state.currentScreen.includes('trash') || state.currentScreen.includes('weight') || state.currentScreen.includes('impact') || state.currentScreen.includes('disposal') ? 'text-green-500' : 'text-gray-400'}">
+                        <button onclick="navigateTo('trashType')" class="flex flex-col items-center ${state.currentScreen.includes('trash') || state.currentScreen.includes('weight') ? 'text-green-500' : 'text-gray-400'}">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                             </svg>
@@ -597,6 +645,7 @@ window.handleSignUp = handleSignUp;
                 </div>
             `;
         }
+
 
 
         // Main render function
