@@ -5,6 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoTrash NYC</title>
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Firebase V8 CDN Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script>
+        // 1. Firebase Configuration (REPLACE with your actual config if different)
+        const firebaseConfig = {
+          apiKey: "AIzaSyAcl7pPjK9n_LuIP4mJqSVL4G_FWM98S5U",
+          authDomain: "smartsort-8198a.firebaseapp.com",
+          projectId: "smartsort-8198a",
+          storageBucket: "smartsort-8198a.appspot.com",
+          messagingSenderId: "834587190087",
+          appId: "1:834587190087:web:bf9d185bcd9ad7a2c9a262"
+        };
+
+        // 2. Initialize Firebase using the global variable 'firebase'
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = app.auth(); // V8 syntax for Auth
+        const db = app.firestore(); // V8 syntax for Firestore
+        
+        // This is necessary for serverTimestamp to work in V8 CDN setups
+        const FieldValue = firebase.firestore.FieldValue; 
+    </script>
 </head>
 <body class="bg-gray-100">
     <div id="app"></div>
@@ -33,6 +57,80 @@
             render();
         }
 
+        // Helper function for Firebase Login
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            if (!email || !password) {
+                state.error = 'Please enter both email and password.';
+                render();
+                return;
+            }
+
+            try {
+                state.error = 'Logging in...'; // Simple loading state
+                render();
+                state.error = ''; // Clear loading state
+                await auth.signInWithEmailAndPassword(email, password);
+                
+                // On successful login, navigate to the user type selection screen
+                navigateTo('userType');
+
+            } catch (error) {
+                state.error = error.message;
+                render();
+            }
+        }
+        
+        // Helper function for Firebase Sign Up (fixed)
+        async function handleSignUp() {
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+
+            if (!email || !password) {
+                state.error = 'Please enter both email and password.';
+                render();
+                return;
+            }
+
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                try {
+                    await db.collection('users').doc(user.uid).set({
+                        email,
+                        totalPoints: 0,
+                        createdAt: FieldValue.serverTimestamp()
+                    });
+                    console.log(`User profile created for UID: ${user.uid}`);
+                } catch (firestoreError) {
+                    console.warn("Firestore write failed, but user was created in Auth:", firestoreError.message);
+                }
+
+                state.message = `Account created successfully for ${email}!`;
+                render();
+
+                setTimeout(() => {
+                    navigateTo('userType', { userId: user.uid });
+                }, 1500);
+
+            } catch (authError) {
+                if (authError.code === 'auth/email-already-in-use') {
+                    state.error = 'Email already registered. Redirecting to Login...';
+                    render();
+                    setTimeout(() => navigateTo('login'), 1500);
+                } else {
+                    state.error = authError.message;
+                    render();
+                }
+            }
+        }
+
+        window.handleSignUp = handleSignUp;
+        window.handleLogin = handleLogin;
+
         // Login Screen
         function LoginScreen() {
             return `
@@ -48,16 +146,68 @@
                             <p class="text-gray-600 mt-2">Track, Reduce, Earn Points</p>
                         </div>
                         
-                        <input type="email" placeholder="Email" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-4 focus:border-green-500 focus:outline-none">
-                        <input type="password" placeholder="Password" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-6 focus:border-green-500 focus:outline-none">
+                        ${state.error ? `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 text-sm" role="alert">
+                            <span class="block sm:inline">${state.error}</span>
+                        </div>` : ''}
+
+                        <input type="email" id="login-email" placeholder="Email" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-4 focus:border-green-500 focus:outline-none">
+                        <input type="password" id="login-password" placeholder="Password" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-6 focus:border-green-500 focus:outline-none">
                         
-                        <button onclick="navigateTo('userType')" class="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition">
+                        <button onclick="handleLogin()" class="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition">
                             Login
                         </button>
                         
                         
                         <p class="text-center text-gray-500 text-sm mt-4">
-                            Don't have an account? <span class="text-green-500 font-semibold cursor-pointer">Sign up</span>
+                            Don't have an account? <span onclick="navigateTo('signup')" class="text-green-500 font-semibold cursor-pointer">Sign up</span>
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Sign Up Screen
+        function SignUpScreen() {
+            const displayError = state.error;
+            let alertClass = '';
+
+            // Logic to determine alert color based on message content
+            if (displayError.includes('successfully')) {
+                alertClass = 'bg-green-100 border border-green-400 text-green-700'; // Success (Green)
+            } else if (displayError === 'Creating account...') {
+                alertClass = 'bg-blue-100 border border-blue-400 text-blue-700'; // Processing (Blue)
+            } else if (displayError) {
+                alertClass = 'bg-red-100 border border-red-400 text-red-700'; // Error (Red)
+            } else {
+                alertClass = '';
+            }
+
+            return `
+                <div class="min-h-screen bg-gradient-to-b from-green-400 to-blue-500 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
+                        <div class="text-center mb-8">
+                            <div class="bg-green-500 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                                </svg>
+                            </div>
+                            <h1 class="text-3xl font-bold text-gray-800">Create Account</h1>
+                            <p class="text-gray-600 mt-2">Join EcoTrash NYC</p>
+                        </div>
+                        
+                        ${displayError ? `<div class="${alertClass} px-4 py-3 rounded relative mb-4 text-sm font-medium" role="alert">
+                            <span class="block sm:inline">${displayError}</span>
+                        </div>` : ''}
+
+                        <input type="email" id="signup-email" placeholder="Email" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-4 focus:border-green-500 focus:outline-none">
+                        <input type="password" id="signup-password" placeholder="Password (min 6 characters)" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-6 focus:border-green-500 focus:outline-none">
+                        
+                        <button onclick="handleSignUp()" class="w-full bg-blue-500 text-white py-4 rounded-xl font-semibold hover:bg-blue-600 transition">
+                            Sign Up
+                        </button>
+                        
+                        <p class="text-center text-gray-500 text-sm mt-4">
+                            Already have an account? <span onclick="navigateTo('login')" class="text-green-500 font-semibold cursor-pointer">Login</span>
                         </p>
                     </div>
                 </div>
@@ -417,11 +567,13 @@
             }
 
         // Helper function to select trash type from image recognition
-        function selectMainTrashType(trashType){
-            state.trashType = trashType;
+        function selectMainTrashType(trash) {
+            state.trashType = trash.name; // e.g. "Plastic"
+            state.trashCategory = trash.type; // e.g. "plastic_trash_bags" (for backend)
             state.uploadedFile = null;
             render();
         }
+
 
     async function calculateImpact() {
     const weightInput = document.getElementById('weightInput');
@@ -587,7 +739,7 @@
             if (!isAlreadyAdded) {
                 state.totalPoints += points;
                 state.history.unshift({
-                    type: state.type || 'Trash',
+                    type: state.trashType || 'Trash',
                     weight: state.trashWeight.toString(),
                     points: points,
                     date: 'Today',
