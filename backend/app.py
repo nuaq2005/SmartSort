@@ -9,7 +9,7 @@ from torchvision import transforms
 app = Flask(__name__)
 CORS(app)
 
-# CO2 factors from your code
+# CO2 factors
 co2_factors = {
     "plastic_soda_bottles": 2.5,
     "aerosol_cans": 6.5,
