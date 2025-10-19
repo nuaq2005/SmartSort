@@ -48,7 +48,6 @@ co2_factors = {
 class_names = list(co2_factors.keys())
 
 # Load the model
-<<<<<<< HEAD
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #yes to know where to put the tensors
 #print(f"Using device: {device}")
 
@@ -60,20 +59,6 @@ model = torch.load(model_path, map_location=device, weights_only=False) #the sou
 model.eval()
 print("Model loaded successfully!")
 
-=======
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# print(f"Using device: {device}")
-
-# Get the directory where app.py is 
-import os
-current_dir = os.path.dirname(os.path.abspath(__file__)) #__file__
-model_path = os.path.join(current_dir, 'waste_classifier_full.pth')
-model = torch.load(model_path, map_location=device, weights_only=False) #made weights=False
-model.eval()
-print("Model loaded successfully!")
-
-# Same transform 
->>>>>>> 6444d62cbe6a99e8e89bd678844236524350e0c4
 transform = transforms.Compose([
     transforms.Resize((128, 128)),
     transforms.ToTensor(),
@@ -95,24 +80,30 @@ def predict():
     try:
         data = request.get_json() # requests is a object containing everything about http request
         
-        # Decode base64 image
-        image_data = base64.b64decode(data['image'].split(',')[1]) #we are looking at image data aftr comma of array 1, make the image bytes into base64 then send back as text
-        image = Image.open(io.BytesIO(image_data)).convert('RGB') #image.open expects a file not raw bytes so io.bytes creates that and ensures we focus on RGB
-        
-        # Preprocess
-        input_tensor = transform(image).unsqueeze(0).to(device) #unqueeze adds a batch dimension at 0, to(device) moves tensor to gpu if available
+        image_data = None
+        if data.get('image'):
+            image_data = base64.b64decode(data['image'].split(',')[1]) #we are looking at image data aftr comma of array 1, make the image bytes into base64 then send back as text
+            image = Image.open(io.BytesIO(image_data)).convert('RGB') #image.open expects a file not raw bytes so io.bytes creates that and ensures we focus on RGB
+            # Preprocess
+            input_tensor = transform(image).unsqueeze(0).to(device) #unqueeze adds a batch dimension at 0, to(device) moves tensor to gpu if available
+            
+            # Make prediction
+            with torch.no_grad(): #we don't need gradients for inference
+                outputs = model(input_tensor)
+                probabilities = torch.softmax(outputs, dim=1) #this gives us probabilities for each class
+                predicted_idx = torch.argmax(probabilities, dim=1).item() #this gives index of highest probability
+                confidence = probabilities[0][predicted_idx].item() #this gives confidence score of predicted class
+                predicted_class = class_names[predicted_idx] #this maps index to class name
+            
+        else:
+            predicted_class = data.get('class_name')
+            if predicted_class not in class_names:
+                return jsonify({'error': 'Invalid class name provided.'}), 400
+            confidence = 1.0  # Since class is provided, we assume full confidence
+            probabilities = None
 
-        # Make prediction
-        with torch.no_grad(): #we don't need gradients for inference
-            outputs = model(input_tensor)
-            probabilities = torch.softmax(outputs, dim=1) #this gives us probabilities for each class
-            predicted_idx = torch.argmax(probabilities, dim=1).item() #this gives index of highest probability
-            confidence = probabilities[0][predicted_idx].item() #this gives confidence score of predicted class
-        
-        predicted_class = class_names[predicted_idx] #this maps index to class name
-        
         # Calculate CO2 savings if weight provided
-        weight = data.get('weight')  #
+        weight = float(data.get('weight', 0))  #
         co2_saved = calculate_co2(predicted_class, weight)
         
         # Get top 3 predictions
