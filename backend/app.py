@@ -5,6 +5,7 @@ from PIL import Image
 import io
 import base64
 from torchvision import transforms
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -43,38 +44,21 @@ co2_factors = {
     "plastic_trash_bags": 2.8
 }
 
-# Class names (must match your dataset.classes order)
+# Class names 
 class_names = list(co2_factors.keys())
 
 # Load the model
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {device}")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #yes to know where to put the tensors
+#print(f"Using device: {device}")
 
-try:
-    # Get the directory where app.py is located
-    import os
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(current_dir, 'waste_classifier_full.pth')
+current_dir = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(current_dir, 'waste_classifier_full.pth')
     
-    print(f"Current directory: {current_dir}")
-    print(f"Looking for model at: {model_path}")
-    print(f"Files in current directory: {os.listdir(current_dir)}")
-    print(f"Model file exists: {os.path.exists(model_path)}")
+model = torch.load(model_path, map_location=device, weights_only=False) #the source is fully trusted 
     
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Model file not found at {model_path}")
-    
-    model = torch.load(model_path, map_location=device, weights_only=False)
-    
-    model.eval()
-    print("✓ Model loaded successfully!")
-except Exception as e:
-    print(f"❌ Error loading model: {e}")
-    import traceback
-    traceback.print_exc()
-    model = None
+model.eval()
+print("Model loaded successfully!")
 
-# Same transform as training
 transform = transforms.Compose([
     transforms.Resize((128, 128)),
     transforms.ToTensor(),
@@ -82,51 +66,51 @@ transform = transforms.Compose([
                          std=[0.229, 0.224, 0.225])
 ])
 
-def calculate_co2(predicted_class, weight):
+def calculate_co2(predicted_class, weight): 
     """Calculate CO2 saved by recycling"""
     factor = co2_factors.get(predicted_class.lower(), 0)
     co2_saved = weight * factor
     return co2_saved
 
-@app.route('/predict', methods=['POST'])
+@app.route('/predict', methods=['POST']) # need to check the frontend, url must be predict and same for others
 def predict():
     if model is None:
-        return jsonify({'error': 'Model not loaded'}), 500
+        return jsonify({'Model not loaded'}) 
     
     try:
-        data = request.get_json()
+        data = request.get_json() # requests is a object containing everything about http request
         
         # Decode base64 image
-        image_data = base64.b64decode(data['image'].split(',')[1])
-        image = Image.open(io.BytesIO(image_data)).convert('RGB')
+        image_data = base64.b64decode(data['image'].split(',')[1]) #we are looking at image data aftr comma of array 1, make the image bytes into base64 then send back as text
+        image = Image.open(io.BytesIO(image_data)).convert('RGB') #image.open expects a file not raw bytes so io.bytes creates that and ensures we focus on RGB
         
         # Preprocess
-        input_tensor = transform(image).unsqueeze(0).to(device)
-        
+        input_tensor = transform(image).unsqueeze(0).to(device) #unqueeze adds a batch dimension at 0, to(device) moves tensor to gpu if available
+
         # Make prediction
-        with torch.no_grad():
+        with torch.no_grad(): #we don't need gradients for inference
             outputs = model(input_tensor)
-            probabilities = torch.softmax(outputs, dim=1)
-            predicted_idx = torch.argmax(probabilities, dim=1).item()
-            confidence = probabilities[0][predicted_idx].item()
+            probabilities = torch.softmax(outputs, dim=1) #this gives us probabilities for each class
+            predicted_idx = torch.argmax(probabilities, dim=1).item() #this gives index of highest probability
+            confidence = probabilities[0][predicted_idx].item() #this gives confidence score of predicted class
         
-        predicted_class = class_names[predicted_idx]
+        predicted_class = class_names[predicted_idx] #this maps index to class name
         
         # Calculate CO2 savings if weight provided
-        weight = data.get('weight', 1.0)  # Default 1 kg
+        weight = data.get('weight')  #
         co2_saved = calculate_co2(predicted_class, weight)
         
         # Get top 3 predictions
-        top3_prob, top3_idx = torch.topk(probabilities[0], 3)
-        top3_predictions = [
+        top3_prob, top3_idx = torch.topk(probabilities[0], 3) #we will need the top prediction
+        top3_predictions = [ #whats happening here 
             {
                 'class': class_names[idx.item()],
                 'confidence': prob.item()
             }
-            for idx, prob in zip(top3_idx, top3_prob)
+            for idx, prob in zip(top3_idx, top3_prob) #whats happening here
         ]
         
-        return jsonify({
+        return jsonify({ #isn't this already in json format? why jsonify?
             'prediction': predicted_class,
             'confidence': confidence,
             'co2_factor': co2_factors[predicted_class],
@@ -137,7 +121,7 @@ def predict():
         })
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}) #why ,500 also why do we need to have jsonify everywhere when we can just write in json format?
 
 @app.route('/classes', methods=['GET'])
 def get_classes():
