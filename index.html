@@ -37,20 +37,20 @@
 
     <script>
         // State management
-        let state = {
-            currentScreen: 'login',
-            userType: '',
-            selectedZipcode: '',
-            trashType: '',
-            trashWeight: '',
-            totalPoints: 1250,
-            error: '', // For displaying auth errors and temporary messages
-            history: [
-                { type: 'Paper', weight: '8', points: 80, date: 'Yesterday', icon: '📄' },
-                { type: 'Glass', weight: '3', points: 30, date: '2 days ago', icon: '🍾' },
-                { type: 'Metal', weight: '4', points: 40, date: '5 days ago', icon: '🥫' }
-            ]
-        };
+       let state = {
+        currentScreen: 'login',
+        userType: '',
+        selectedZipcode: '',
+        selectedMap: 'recycling',
+        trashType: '',
+        trashWeight: '',
+        totalPoints: 0,  
+        co2Saved: 0,
+        energySaved: 0,
+        pointsEarned: 0,
+        error: '',
+        history: []  
+};
 
         // Navigate to screen
         function navigateTo(screen, data = {}) {
