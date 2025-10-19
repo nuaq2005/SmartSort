@@ -461,7 +461,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     weight: weight,
-                    class_name: state.trashType.toLowerCase()
+                    class_name: state.type.toLowerCase()
                 })
             });
         }
@@ -502,6 +502,7 @@
         // Impact Screen
         // Environmental Impact Screen
         function ImpactScreen() {
+            
             const trashWeight = parseFloat(state.trashWeight) || 0;
            const co2Saved = state.co2Saved || 0;
            const pointsEarned = state.pointsEarned || 0;
@@ -541,7 +542,7 @@
                                 </div>
                             </div>
                             
-                            <button onclick="navigateTo('disposal')" class="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition mt-6">
+                            <button onclick="{navigateTo('disposal');}" class="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition mt-6">
                                 Find Disposal Locations
                             </button>
                         </div>
@@ -551,6 +552,15 @@
             `;
         }
 
+        //clear info after impact screen
+        function clearInfo() {
+            state.trashType = '';
+            state.trashWeight = '';
+            state.co2Saved = 0;
+            state.energySaved = 0;
+            state.pointsEarned = 0;
+            state.uploadedFile = null;
+        }
 
         // Complete Disposal
         function DisposalScreen() {
@@ -577,7 +587,7 @@
             if (!isAlreadyAdded) {
                 state.totalPoints += points;
                 state.history.unshift({
-                    type: state.trashType,
+                    type: state.type || 'Trash',
                     weight: state.trashWeight.toString(),
                     points: points,
                     date: 'Today',
@@ -591,7 +601,7 @@
                         <button onclick="navigateTo('impact')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg font-semibold">
                             ← Back
                         </button>
-                        <button onclick="navigateTo('trashType')" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold">
+                        <button onclick="clearInfo(); navigateTo('trashType')" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold">
                             Identify for more trash
                         </button>
                     </div>
