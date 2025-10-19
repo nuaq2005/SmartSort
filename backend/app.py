@@ -10,7 +10,7 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# CO2 factors from your code
+# CO2 factors
 co2_factors = {
     "plastic_soda_bottles": 2.5,
     "aerosol_cans": 6.5,
@@ -48,6 +48,7 @@ co2_factors = {
 class_names = list(co2_factors.keys())
 
 # Load the model
+<<<<<<< HEAD
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #yes to know where to put the tensors
 #print(f"Using device: {device}")
 
@@ -59,6 +60,20 @@ model = torch.load(model_path, map_location=device, weights_only=False) #the sou
 model.eval()
 print("Model loaded successfully!")
 
+=======
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# print(f"Using device: {device}")
+
+# Get the directory where app.py is 
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__)) #__file__
+model_path = os.path.join(current_dir, 'waste_classifier_full.pth')
+model = torch.load(model_path, map_location=device, weights_only=False) #made weights=False
+model.eval()
+print("Model loaded successfully!")
+
+# Same transform 
+>>>>>>> 6444d62cbe6a99e8e89bd678844236524350e0c4
 transform = transforms.Compose([
     transforms.Resize((128, 128)),
     transforms.ToTensor(),

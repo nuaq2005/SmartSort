@@ -136,12 +136,12 @@
         // Trash Type Selection Screen
         function TrashTypeScreen() {
             const trashTypes = [
-                { name: 'Plastic', icon: '♻️', type: 'plastic' },
-                { name: 'Paper', icon: '📄', type: 'paper' },
-                { name: 'Glass', icon: '🍾', type: 'glass' },
-                { name: 'Metal', icon: '🥫', type: 'metal' },
-                { name: 'Organic', icon: '🍎', type: 'organic' },
-                { name: 'E-Waste', icon: '💻', type: 'ewaste' }
+                { name: 'Plastic', icon: '♻️', type: 'plasticplastic_soda_bottles'},
+                { name: 'Paper', icon: '📄', type: 'office_paper' },
+                { name: 'Glass', icon: '🍾', type: 'glass_food_jars' },
+                { name: 'Metal', icon: '🥫', type: 'steel_food_cans' },
+                { name: 'Organic', icon: '🍎', type: 'eggshells' },
+                { name: 'E-Waste', icon: '💻', type: 'aerosol_cans' }
             ];
             
             return `
@@ -151,9 +151,9 @@
                         <p class="text-green-100">Zipcode: ${state.selectedZipcode}</p>
                     </div>
                     
-                    <div class="px-4 -mt-4">
+                    <div class="px-4 -mt-4"> 
                         <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
-                            <button class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 rounded-xl font-semibold mb-4 flex items-center justify-center">
+                            <button onClick="startImageRecognitionFlow()" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 rounded-xl font-semibold mb-4 flex items-center justify-center">
                                 <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -165,52 +165,35 @@
                             
                             <div class="grid grid-cols-2 gap-3">
                                 ${trashTypes.map(item => `
-                                    <button onclick="navigateTo('weight', {trashType: '${item.name}'})" class="bg-gray-50 hover:bg-gray-100 p-4 rounded-xl border-2 border-gray-200 hover:border-green-500 transition">
+                                    <button onclick="selectMainTrashType('${item.type}');" class="bg-gray-50 hover:bg-gray-100 p-4 rounded-xl border-2 border-gray-200 hover:border-green-500 transition">
                                         <div class="text-4xl mb-2">${item.icon}</div>
                                         <div class="text-sm font-semibold text-gray-700">${item.name}</div>
                                     </button>
                                 `).join('')}
                             </div>
                         </div>
+
+                        
+                        <div class="min-h-screen bg-gray-50 pb-24">
+                        <div class="bg-green-500 text-white p-6 pb-8">
+                        <h2 class="text-2xl font-bold">Estimate Weight</h2>
+                        <p class="text-green-100">${state.name} waste</p>
+                        </div>
+
+                        <div class="px-4 -mt-4">
+                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
+                            <label class="block text-gray-700 font-semibold mb-2">Enter weight (lbs)</label>
+                            <input id="weightInput" type="number" value="${state.trashWeight > 0 ? state.trashWeight : ' '}" placeholder="0" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-4 text-2xl font-bold text-center focus:border-green-500 focus:outline-none">
+                        <button onclick="calculateImpact()" class="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition">
+                                Calculate Impact
+                         </button>
+                         </div>
                     </div>
                     ${BottomNav()}
                 </div>
             `;
         }
 
-        // Weight Estimation Screen
-        function WeightScreen() {
-            return `
-                <div class="min-h-screen bg-gray-50 pb-24">
-                    <div class="bg-green-500 text-white p-6 pb-8">
-                        <h2 class="text-2xl font-bold">Estimate Weight</h2>
-                        <p class="text-green-100">${state.trashType} waste</p>
-                    </div>
-                    
-                    <div class="px-4 -mt-4">
-                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
-                            <label class="block text-gray-700 font-semibold mb-2">Enter weight (lbs)</label>
-                            <input id="weightInput" type="number" value="${state.trashWeight}" placeholder="0" class="w-full p-4 border-2 border-gray-200 rounded-xl mb-4 text-2xl font-bold text-center focus:border-green-500 focus:outline-none">
-                            
-                            <div class="bg-blue-50 p-4 rounded-xl mb-4">
-                                <h3 class="font-semibold text-blue-900 mb-2">Common Reference Weights:</h3>
-                                <div class="text-sm text-blue-800 space-y-1">
-                                    <p>• Empty soda can: ~0.5 oz (0.03 lbs)</p>
-                                    <p>• Plastic water bottle: ~0.7 oz (0.04 lbs)</p>
-                                    <p>• Standard trash bag: ~5-10 lbs</p>
-                                    <p>• Large garbage bag: ~20-30 lbs</p>
-                                </div>
-                            </div>
-                            
-                            <button onclick="calculateImpact()" class="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition">
-                                Calculate Impact
-                            </button>
-                        </div>
-                    </div>
-                    ${BottomNav()}
-                </div>
-            `;
-        }
 
         // Environmental Impact Screen
         function ImpactScreen() {
@@ -394,31 +377,85 @@
             `;
         }
 
-        // Helper function to calculate impact
-        function calculateImpact() {
-            const input = document.getElementById('weightInput');
-            if (input && input.value) {
-                state.trashWeight = input.value;
-                navigateTo('impact');
-            } else {
-                alert('Please enter a weight');
-            }
+        //Helper function to choose image recognition
+        function startImageRecognitionFlow (){
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+
+            fileInput.onchange = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    console.log('File selected:', file.name);
+                    state.fileInput = file;
+                    state.trashType = null;
+                    render();
+                }
+                fileInput.remove();
+            }; 
+            fileInput.click();
+        }  
+        
+        // Helper function to select trash type from image recognition
+        function selectMainTrashType(trashType){
+            state.trashType = trashType;
+            state.fileInput = null;
+            render();
         }
 
         // Helper function to complete disposal
-        function completeDisposal() {
-            const weight = parseFloat(state.trashWeight) || 0;
-            const points = Math.floor(weight * 10);
-            state.totalPoints += points;
-            state.history.unshift({
-                type: state.trashType,
-                weight: state.trashWeight,
-                points: points,
-                date: 'Today',
-                icon: state.trashType === 'Plastic' ? '♻️' : state.trashType === 'Paper' ? '📄' : '🗑️'
-            });
-            navigateTo('history');
+        function calculateImpact() {
+            const weightInput = document.getElementById('weightInput');
+            const weight = parseFloat(weightInput.value);
+
+            if (weight <= 0) {
+                alert('Please enter the weight of the trash.');
+                return;
+            }
+
+            if (!state.trashType && !state.fileInput) {
+                alert('Please select a trash type or upload an image first.');
+                return;
+            } 
+
+            
+
+            const formData = new FormData();
+            formData.append('weight', weight);
+
+            if(state.fileInput){
+                formData.append('image', state.fileInput);
+            } else {
+                formData.append('class_name', state.trashType);
+            }
+            
+            fetch('http://127.0.0.1:5000/predict', {
+                method: 'POST',
+                body: formData
+            })
+    .then(res => {
+        if (!res.ok) {
+            throw new Error(`HTTP error! Status: ${res.status}`);
         }
+        return res.json();
+    })
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            state.trashType = data.trash_type || state.trashType;
+            state.trashWeight = weight;
+            state.co2Saved = data.co2_saved;
+            state.message = data.message || "Thank you for saving the environment!";
+
+            navigateTo('impact');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Failed to get prediction from backend.');
+    });
+}
 
         // Main render function
         function render() {
@@ -427,7 +464,7 @@
                 'userType': UserTypeScreen,
                 'map': MapScreen,
                 'trashType': TrashTypeScreen,
-                'weight': WeightScreen,
+                'weight': TrashTypeScreen,
                 'impact': ImpactScreen,
                 'disposal': DisposalScreen,
                 'history': HistoryScreen
