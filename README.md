@@ -36,7 +36,7 @@ With just the snap of a photo, users can:
 1. The **user uploads a photo** from the frontend.  
 2. The **Flask backend** receives it, processes it through the **PyTorch model**, and returns classification + emission data.  
 3. **Firebase** stores user data and leaderboard status.  
-4. The **frontend** displays classification results, CO₂ estimates, and leaderboard updates in real time.
+4. The **frontend** displays classification results and CO₂ estimates
 
 ### 🧠 Key Design Decisions
 - Used **Flask** for lightweight API serving and seamless Python ML integration  
