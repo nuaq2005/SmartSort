@@ -32,7 +32,7 @@ With just the snap of a photo, users can:
 - **AI Model:** PyTorch image classification model trained on 15k waste datasets  
 
 ### 🧩 Architecture Overview
-![Architecture](assets/Architecture.png)
+![Architecture](Architecture.png)
 1. The **user uploads a photo** from the frontend.  
 2. The **Flask backend** receives it, processes it through the **PyTorch model**, and returns classification + emission data.  
 3. **Firebase** stores user data and leaderboard status.  
