@@ -1,33 +1,35 @@
-# Problem
-Recyclables, electronics, and food scraps are often bunched with common trash, but proper sorting of trash could go a long way. That's why we made SmartSort. It can help companies and us to know the carbon emissions of their waste. 
-
 # SmartSort
-A smart guide to sorting trash! With just the snap of a photo, find out how to properly dispose of it, and climb up the leadership board.
 
-# How we build it 
+## Problem
+Recyclables, electronics, and food scraps are mixed with common trash, as a result, it is difficult to recycle and estimate carbon emissions.  
+Proper waste sorting can significantly reduce environmental impact but many people don’t know how to sort their trash correctly.  
 
+That’s why we created **SmartSort** — an AI-powered tool that helps individuals and companies to properly dispose of waste while tracking its carbon footprint.  
 
-## PRO TIPS
+---
 
-* Include architecture diagrams
+## SmartSort
+**SmartSort** is a smart guide to sorting trash!  
+With just the snap of a photo, users can:
+- Instantly identify what type of waste it is (recyclable, compost, landfill, etc.)
+- Learn where to properly dispose of it
+- See the estimated **carbon emissions** of each item
+- Compete on a **leaderboard** that gamifies sustainable habits
 
-* Document setup and run instructions
+---
 
-* List all technologies used
+## ⚙️ Technical Challenges Faced
+- Connecting the **Flask backend** with the **React frontend**
+- Training and optimizing the **PyTorch model** to accurately classify trash images and calculate CO2 emissions
 
-* Explain key design decisions
+---
 
-* Provide live demos when possible
+## 🧱 How We Built It
 
+### 🖥️ Tech Stack
+- **Frontend:** React + Tailwind CSS  
+- **Backend:** Flask (Python)  
+- **Database & Authentication:** Firebase  
+- **AI Model:** PyTorch image classification model trained on 15k waste datasets  
 
-Be ready to discuss:
-
-* Why you chose the project
-
-* Technical challenges faced
-
-* Alternative approaches considered
-
-* Future improvements planned
-
-* How you'd scale the project
+### 🧩 Architecture Overview
