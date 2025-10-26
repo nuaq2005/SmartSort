@@ -35,10 +35,8 @@ With just the snap of a photo, users can:
 ![Architecture](Architecture.png)
 1. The **user uploads a photo** from the frontend.  
 2. The **Flask backend** receives it, processes it through the **PyTorch model**, and returns classification + emission data.  
-3. **Firebase** stores user data and leaderboard status.  
+3. **Firebase** stores user data. 
 4. The **frontend** displays classification results and CO₂ estimates
 
 ### 🧠 Key Design Decisions
-- Used **Flask** for lightweight API serving and seamless Python ML integration  
-- Chose **Firebase** for real-time database and authentication  
-- Built a **modular AI pipeline** to easily retrain or swap the model with updated datasets  
+- Utilized the **MobileNetN2** deep learning model for computer vision tasks, particularly on mobile and embedded devices due to its speed
